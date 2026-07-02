@@ -1,0 +1,30 @@
+{
+  "project": "{{PROJECT}}",
+  "last_updated": "",
+  "rules": {
+    "single_active_feature": true,
+    "passing_requires_evidence": true,
+    "state_changes_only_via": "scripts/verify-feature.mjs"
+  },
+  "status_legend": {
+    "not_started": "not begun",
+    "active": "being worked on now (max 1)",
+    "blocked": "cannot proceed — see notes",
+    "passing": "verification commands ran and passed; evidence recorded; irreversible"
+  },
+  "features": [
+    {
+      "id": "F001",
+      "priority": 1,
+      "area": "example",
+      "title": "Example feature — replace me",
+      "behavior": "One sentence describing user-visible behavior, from the user's point of view.",
+      "status": "not_started",
+      "verification": [
+        "npm test"
+      ],
+      "evidence": [],
+      "notes": "Granularity: completable in one session. Verification must be executable commands."
+    }
+  ]
+}

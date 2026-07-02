@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# kb — deterministic retrieval CLI for the knowledge warehouse.
+# Zero dependencies (bash + grep/awk/sed). Works from any directory:
+# set KB_ROOT to the warehouse path, or it defaults to this script's repo.
+
+KB_ROOT="${KB_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+K="$KB_ROOT/knowledge"
+C="$KB_ROOT/contracts"
+
+usage() {
+  cat <<'EOF'
+kb — knowledge warehouse retrieval
+
+  kb index              Warehouse index (always start here)
+  kb modules            List registered modules
+  kb module <name>      One module's domain file (rules, states, open questions)
+  kb rule <RULE-ID>     Single rule block by ID
+  kb term <word>        Glossary lookup (business term / field name)
+  kb search <query>     Grep across knowledge/ and contracts/ (case-insensitive)
+  kb api <module>       Endpoint list of a contract (paths + methods + summaries)
+  kb api <module> <path>  One path block + the schemas it references
+  kb pending            Unreviewed inbox items (proposals, NOT approved truth)
+  kb gaps               Open questions + needs-confirmation rules
+
+Env: KB_ROOT  path to warehouse repo (default: this script's repo)
+EOF
+}
+
+[ -d "$K" ] || { echo "kb: no knowledge/ under KB_ROOT=$KB_ROOT" >&2; exit 1; }
+
+cmd="${1:-help}"; shift || true
+case "$cmd" in
+  index)
+    cat "$K/INDEX.md"
+    ;;
+
+  modules)
+    found=$(ls "$K/domain" 2>/dev/null | grep -v '^_' | sed 's/\.md$//' || true)
+    if [ -n "$found" ]; then echo "$found"; else
+      echo "(no modules yet — create knowledge/domain/<module>.md from _template.md)"
+    fi
+    ;;
+
+  module)
+    [ $# -ge 1 ] || { echo "usage: kb module <name>" >&2; exit 1; }
+    f="$K/domain/$1.md"
+    if [ -f "$f" ]; then
+      cat "$f"
+      c="$C/openapi/$1.yaml"
+      [ -f "$c" ] && echo -e "\n---\n(contract exists: contracts/openapi/$1.yaml — read it if the task touches the API)"
+    else
+      echo "kb: no module '$1'. Available:" >&2
+      ls "$K/domain" 2>/dev/null | grep -v '^_' | sed 's/\.md$//' >&2 || echo "(none)" >&2
+      exit 1
+    fi
+    ;;
+
+  rule)
+    [ $# -ge 1 ] || { echo "usage: kb rule <RULE-ID>" >&2; exit 1; }
+    out=$(awk -v id="$1" '
+      /^###/ && index($0, id) { on=1; print FILENAME ":"; print; next }
+      on && /^##/ { exit }
+      on { print }
+    ' "$K"/domain/*.md 2>/dev/null || true)
+    if [ -n "$out" ]; then echo "$out"; else
+      echo "kb: rule '$1' not found. This is a knowledge gap — do not invent; propose /ba-capture." >&2
+      exit 1
+    fi
+    ;;
+
+  term)
+    [ $# -ge 1 ] || { echo "usage: kb term <word>" >&2; exit 1; }
+    out=$(grep -in -- "$1" "$K/glossary.md" || true)
+    if [ -n "$out" ]; then echo "$out"; else
+      echo "kb: '$1' not in glossary. Do NOT invent a field/term name — capture it first (/ba-capture)." >&2
+      exit 1
+    fi
+    ;;
+
+  search)
+    [ $# -ge 1 ] || { echo "usage: kb search <query>" >&2; exit 1; }
+    out=$(grep -rin --include='*.md' --include='*.yaml' --include='*.yml' \
+      --exclude-dir='.git' -- "$*" "$K" "$C" 2>/dev/null \
+      | sed "s|^$KB_ROOT/||" | head -60 || true)
+    if [ -n "$out" ]; then
+      echo "$out"
+      n=$(echo "$out" | wc -l | tr -d ' ')
+      [ "$n" -ge 60 ] && echo "(truncated at 60 hits — narrow the query)"
+    else
+      echo "kb: no hits for '$*'. Try a narrower/alternate keyword, or treat as knowledge gap." >&2
+      exit 1
+    fi
+    ;;
+
+  api)
+    [ $# -ge 1 ] || { echo "usage: kb api <module> [<path>]" >&2; exit 1; }
+    f="$C/openapi/$1.yaml"
+    [ -f "$f" ] || { echo "kb: no contract '$1'. Available:" >&2; ls "$C/openapi" 2>/dev/null | grep -E '\.ya?ml$' | sed 's/\.yaml$//;s/\.yml$//' >&2 || echo "(none)" >&2; exit 1; }
+    if [ $# -eq 1 ]; then
+      # Table of contents only: paths, methods, summaries — never the whole file.
+      awk '
+        /^paths:/            { inp=1; next }
+        inp && /^[A-Za-z]/   { inp=0 }
+        inp && /^  \//       { p=$0; gsub(/^ +|: *$/,"",p); print p; next }
+        inp && /^    (get|post|put|patch|delete|options|head):/ {
+          m=$1; gsub(/:$/,"",m); printf "  %s", m; pend=1; next }
+        inp && pend && /^      summary:/ {
+          s=$0; sub(/^ +summary: */,"",s); printf " — %s\n", s; pend=0; next }
+        inp && pend && /^    [a-z]/ { print ""; pend=0 }
+        END { if (pend) print "" }
+      ' "$f"
+      echo "(slice one: kb api $1 <path>)"
+    else
+      block=$(awk -v p="$2" '
+        /^paths:/          { inp=1; next }
+        inp && /^[A-Za-z]/ { exit }
+        inp && /^  \//     { cur=$0; gsub(/^ +|: *$/,"",cur); on=(cur==p) }
+        on                 { print }
+      ' "$f")
+      if [ -z "$block" ]; then
+        echo "kb: path '$2' not in $1. List: kb api $1" >&2; exit 1
+      fi
+      echo "$block"
+      # Append referenced component schemas so the slice is self-contained.
+      refs=$(echo "$block" | grep -o "#/components/schemas/[A-Za-z0-9_]*" | sed 's|.*/||' | sort -u || true)
+      for r in $refs; do
+        echo ""
+        awk -v s="$r" '
+          /^components:/      { inc=1; next }
+          inc && /^[A-Za-z]/  { exit }
+          inc && /^  schemas:/{ ins=1; next }
+          ins && /^    [A-Za-z0-9_]+:/ { cur=$0; gsub(/^ +|: *$/,"",cur); on=(cur==s) }
+          on { print }
+        ' "$f"
+      done
+    fi
+    ;;
+
+  pending)
+    items=$(ls "$K/inbox" 2>/dev/null | grep -vi '^readme' || true)
+    if [ -n "$items" ]; then
+      echo "UNREVIEWED (proposals only, not approved truth) — run /ba-review:"
+      echo "$items" | sed 's/^/  inbox\//'
+    else
+      echo "inbox empty — warehouse is current."
+    fi
+    ;;
+
+  gaps)
+    echo "## needs-confirmation rules"
+    grep -rn "needs-confirmation" "$K/domain" 2>/dev/null | sed "s|^$KB_ROOT/||" || echo "(none)"
+    echo ""
+    echo "## open questions"
+    grep -rn -- "- \[ \]" "$K/domain" 2>/dev/null | sed "s|^$KB_ROOT/||" || echo "(none)"
+    ;;
+
+  help|-h|--help|*)
+    usage
+    ;;
+esac

@@ -1,0 +1,32 @@
+# Per-project configuration — the only file you must edit when reusing this
+# warehouse structure for another project.
+
+project:
+  name: my-project
+  description: What this project is, in one line
+
+# Absolute path(s) to the code repo(s) this warehouse serves.
+# Used by /context to point agents at real entities/DTOs instead of copies.
+code_repos:
+  backend: ~/projects/my-project/backend
+
+# Known modules (bounded contexts). /context, kb, and rule IDs key off these.
+# Add modules as they are discovered — lowercase, single word if possible.
+modules: []
+  # - payment
+  # - invoicing
+
+# Knowledge sources and their owners — where truth comes from, for provenance.
+sources:
+  - kind: google-docs
+    what: PRD
+    owner: BA / client
+  - kind: chat
+    what: API specs, ad-hoc changes
+    owner: FE team
+  - kind: meeting
+    what: DB design, settlements
+    owner: techlead + backend
+
+# Sole reviewer of this warehouse.
+reviewer: you@example.com
