@@ -1,6 +1,7 @@
   /* ============================================================
-     Knowledge Warehouse — archival dark developer-tool aesthetic
-     Palette: near-black canvas, one brass accent, green = approved
+     Knowledge Warehouse — archival developer-tool aesthetic
+     Dark: near-black canvas, brass accent. Light: archival paper.
+     Terminal / code surfaces stay dark in BOTH themes.
      ============================================================ */
   :root {
     --bg:        #0A0B0E;
@@ -28,6 +29,22 @@
     --flag:      #E06A5A;
     --flag-soft: rgba(224,106,90,0.10);
 
+    /* brand-constant button brass — identical in both themes */
+    --btn-bg:    #E3A84A;
+    --btn-hi:    #F2BE68;
+    --btn-fg:    #17130A;
+
+    /* theme-dependent chrome */
+    --grid-line: rgba(255,255,255,0.018);
+    --nav-bg:    rgba(10,11,14,0.72);
+    --ghost-hover: rgba(255,255,255,0.03);
+    --chip-bg:   rgba(255,255,255,0.03);
+    --card-bg:   #14161B;
+    --card-line: rgba(255,255,255,0.07);
+    --card-shadow: 0 30px 60px -20px rgba(0,0,0,0.8);
+    --stamp-bg:  rgba(10,11,14,0.65);
+    --selection: rgba(227,168,74,0.35);
+
     --font-display: 'Space Grotesk', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     --font-body:    'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     --font-mono:    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -43,6 +60,71 @@
       rgba(255,255,255,0.035) 27px,
       rgba(255,255,255,0.035) 28px
     );
+
+    color-scheme: dark;
+  }
+
+  /* ---- light theme: "archival paper" — warm paper, ink, deep brass ---- */
+  :root[data-theme="light"] {
+    --bg:        #F6F3EC;
+    --bg-2:      #F0EBE1;
+    --surface:   #FCFAF5;
+    --surface-2: #F1ECE2;
+    --fg:        #1D1B14;
+    --fg-dim:    #4B463B;
+    --muted:     #6C665A;
+    --faint:     #857E70;
+    --border:    rgba(35,28,12,0.10);
+    --border-2:  rgba(35,28,12,0.17);
+
+    --accent:    #9A660C;
+    --accent-hi: #B77E28;
+    --accent-dk: #7A520C;
+    --accent-soft: rgba(154,102,12,0.10);
+    --accent-line: rgba(154,102,12,0.30);
+
+    --approved:  #177347;
+    --approved-soft: rgba(23,115,71,0.10);
+    --flag:      #B23C2B;
+    --flag-soft: rgba(178,60,43,0.08);
+
+    --btn-hi:    #CE9034;
+
+    --grid-line: rgba(35,28,12,0.04);
+    --nav-bg:    rgba(246,243,236,0.78);
+    --ghost-hover: rgba(35,28,12,0.04);
+    --chip-bg:   rgba(35,28,12,0.03);
+    --card-bg:   #FFFEFA;
+    --card-line: rgba(35,28,12,0.12);
+    --card-shadow: 0 24px 50px -24px rgba(52,40,14,0.35);
+    --stamp-bg:  rgba(255,254,250,0.72);
+    --selection: rgba(154,102,12,0.22);
+
+    --ledger: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 27px,
+      rgba(35,28,12,0.06) 27px,
+      rgba(35,28,12,0.06) 28px
+    );
+
+    color-scheme: light;
+  }
+
+  /* ---- always-dark code surfaces: re-pin the palette locally so the
+         terminal, quickstart block and diff read as dark in both themes ---- */
+  .terminal, .codeblock, .diff {
+    --fg:        #ECEDEF;
+    --fg-dim:    #B7BAC1;
+    --muted:     #9195A0;
+    --faint:     #838892;
+    --border:    rgba(255,255,255,0.09);
+    --border-2:  rgba(255,255,255,0.14);
+    --accent:    #E3A84A;
+    --approved:  #57C98A;
+    --flag:      #E06A5A;
+    color: var(--fg); /* don't inherit light-theme ink onto dark surfaces */
+    color-scheme: dark;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -56,14 +138,16 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
+    transition: background-color .25s ease, color .25s ease;
   }
+  ::selection { background: var(--selection); }
   /* faint archival grid on the page itself */
   body::before {
     content: "";
     position: fixed; inset: 0;
     background-image:
-      linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
     background-size: 56px 56px;
     pointer-events: none;
     z-index: 0;
@@ -82,7 +166,7 @@
   /* skip link — first focusable, hidden until focused */
   .skip-link {
     position: absolute; left: 14px; top: -60px; z-index: 200;
-    background: var(--accent); color: #17130A;
+    background: var(--btn-bg); color: var(--btn-fg);
     padding: 10px 16px; border-radius: 8px;
     font-family: var(--font-display); font-weight: 600; font-size: 14px;
     transition: top .16s ease;
@@ -132,10 +216,10 @@
     transition: transform .12s ease, background .18s ease, border-color .18s ease;
   }
   .btn:active { transform: translateY(1px); }
-  .btn-primary { background: var(--accent); color: #17130A; border-color: var(--accent-hi); }
-  .btn-primary:hover { background: var(--accent-hi); }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-fg); border-color: var(--btn-hi); }
+  .btn-primary:hover { background: var(--btn-hi); }
   .btn-ghost { background: transparent; color: var(--fg); border-color: var(--border-2); }
-  .btn-ghost:hover { border-color: var(--fg-dim); background: rgba(255,255,255,0.03); }
+  .btn-ghost:hover { border-color: var(--fg-dim); background: var(--ghost-hover); }
   .btn svg { width: 17px; height: 17px; }
   .star-badge {
     margin-left: 2px; padding-left: 10px;
@@ -149,7 +233,7 @@
   header.nav {
     position: sticky; top: 0; z-index: 50;
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    background: rgba(10,11,14,0.72);
+    background: var(--nav-bg);
     border-bottom: 1px solid var(--border);
   }
   .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; }
@@ -165,6 +249,20 @@
   .nav-links a { font-size: 14px; color: var(--muted); transition: color .15s; }
   .nav-links a:hover { color: var(--fg); }
   .nav-cta { display: flex; align-items: center; gap: 12px; }
+
+  /* theme toggle */
+  .theme-toggle {
+    width: 38px; height: 38px; flex: none;
+    display: grid; place-items: center;
+    background: transparent;
+    border: 1px solid var(--border-2);
+    border-radius: 9px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color .15s ease, border-color .15s ease, background .15s ease;
+  }
+  .theme-toggle:hover { color: var(--fg); border-color: var(--fg-dim); background: var(--ghost-hover); }
+  .theme-toggle svg { width: 17px; height: 17px; }
 
   /* =========================================================
      HERO
@@ -222,19 +320,19 @@
     position: absolute;
     right: -26px; bottom: -34px;
     width: 250px;
-    background: #14161b;
+    background-color: var(--card-bg);
     background-image: var(--ledger);
     background-position: 0 44px;
     border: 1px solid var(--border-2);
     border-radius: 10px;
     padding: 16px 16px 18px;
-    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.8);
+    box-shadow: var(--card-shadow);
     transform: rotate(2deg);
   }
   .kcard-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
   .kcard-tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--faint); }
   .kcard .ktitle { font-family: var(--font-body); font-size: 13.5px; font-weight: 600; color: var(--fg); line-height: 1.35; margin-bottom: 10px; }
-  .kcard .row { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 11px; padding: 4px 0; border-top: 1px dashed rgba(255,255,255,0.07); }
+  .kcard .row { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 11px; padding: 4px 0; border-top: 1px dashed var(--card-line); }
   .kcard .row .rk { color: var(--faint); }
   .kcard .row .rv { color: var(--fg-dim); }
   /* the stamp */
@@ -247,7 +345,7 @@
     border-radius: 7px;
     padding: 6px 11px;
     transform: rotate(-11deg);
-    background: rgba(10,11,14,0.65);
+    background: var(--stamp-bg);
     box-shadow: inset 0 0 0 1px rgba(87,201,138,0.25);
     opacity: 0.92;
   }
@@ -289,7 +387,7 @@
   .stage h3 .slash { color: var(--accent); }
   .stage p { font-size: 13px; color: var(--muted); line-height: 1.5; }
   .stage .files { margin-top: 12px; display: flex; flex-direction: column; gap: 5px; }
-  .stage .files code { font-family: var(--font-mono); font-size: 11.5px; color: var(--fg-dim); background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 5px; padding: 3px 7px; width: fit-content; }
+  .stage .files code { font-family: var(--font-mono); font-size: 11.5px; color: var(--fg-dim); background: var(--chip-bg); border: 1px solid var(--border); border-radius: 5px; padding: 3px 7px; width: fit-content; }
   .arrow-x { flex: none; width: 34px; display: grid; place-items: center; color: var(--faint); }
   .arrow-x svg { width: 20px; height: 20px; }
 
@@ -306,7 +404,7 @@
     display: inline-flex; align-items: center; gap: 6px;
     font-family: var(--font-mono); font-size: 10px; font-weight: 700;
     letter-spacing: 0.16em; text-transform: uppercase;
-    color: #17130A; background: var(--accent);
+    color: var(--btn-fg); background: var(--btn-bg);
     padding: 4px 8px; border-radius: 5px; margin-bottom: 12px;
   }
   .gate-badge svg { width: 12px; height: 12px; }
@@ -341,6 +439,7 @@
   .cmd-list .cmdline .c { color: var(--fg); }
   .cmd-list .cmdline .note { color: var(--faint); margin-left: auto; font-size: 11px; }
   .diff { margin-top: auto; font-family: var(--font-mono); font-size: 12px; line-height: 1.7; background: #0B0D11; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .diff span { display: block; }
   .diff .add { color: var(--approved); }
   .diff .del { color: var(--flag); text-decoration: line-through; opacity: .8; }
   .diff .ctx { color: var(--faint); }
@@ -407,6 +506,27 @@
   .foot-links { display: flex; gap: 22px; font-size: 13.5px; color: var(--muted); }
   .foot-links a:hover { color: var(--fg); }
   .foot-meta { font-family: var(--font-mono); font-size: 12px; color: var(--faint); }
+
+  /* =========================================================
+     LIGHT THEME OVERRIDES — accent-tinted gradients & shadows
+     that can't be expressed as single-token swaps
+     ========================================================= */
+  :root[data-theme="light"] .stage.gate {
+    background: linear-gradient(180deg, rgba(154,102,12,0.08), rgba(154,102,12,0.02));
+    box-shadow: 0 0 0 4px rgba(154,102,12,0.05), 0 24px 50px -24px rgba(154,102,12,0.22);
+  }
+  :root[data-theme="light"] .panel.humans {
+    background: linear-gradient(180deg, rgba(154,102,12,0.06), transparent 60%);
+  }
+  :root[data-theme="light"] .footer-cta::before {
+    background: radial-gradient(ellipse 60% 90% at 50% 30%, rgba(154,102,12,0.07), transparent 70%);
+  }
+  :root[data-theme="light"] .terminal {
+    box-shadow: 0 30px 70px -30px rgba(52,40,14,0.5), 0 0 0 1px rgba(35,28,12,0.06);
+  }
+  :root[data-theme="light"] .codeblock {
+    box-shadow: 0 24px 60px -30px rgba(52,40,14,0.45);
+  }
 
   /* =========================================================
      reveal on scroll

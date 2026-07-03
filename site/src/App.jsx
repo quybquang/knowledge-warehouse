@@ -11,15 +11,39 @@ function GitHubIcon() {
   )
 }
 
+/* the "approval seal" — a perforated stamp edge around a check */
 function LogoIcon() {
   return (
     <span className="logo" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
-        <path d="M3 8l9-5 9 5-9 5-9-5z" />
-        <path d="M3 12l9 5 9-5" />
-        <path d="M3 16l9 5 9-5" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <circle cx="12" cy="12" r="8.6" strokeWidth="1.6" strokeDasharray="3.3 2.1" />
+        <path d="M8.4 12.4l2.5 2.6 4.9-5.4" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </span>
+  )
+}
+
+function ThemeToggle({ theme, onToggle }) {
+  const dark = theme === 'dark'
+  return (
+    <button
+      className="theme-toggle"
+      type="button"
+      onClick={onToggle}
+      aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}
+      title={dark ? 'Light theme' : 'Dark theme'}
+    >
+      {dark ? (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4l1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+        </svg>
+      ) : (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z" />
+        </svg>
+      )}
+    </button>
   )
 }
 
@@ -185,6 +209,14 @@ function Quickstart() {
 }
 
 export default function App() {
+  /* ---- theme: initial value was set on <html> before paint (index.html) ---- */
+  const [theme, setTheme] = useState(() => document.documentElement.dataset.theme || 'dark')
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    try { localStorage.setItem('kw-theme', theme) } catch { /* private mode */ }
+  }, [theme])
+
   /* ---- reveal on scroll ---- */
   useEffect(() => {
     const els = document.querySelectorAll('.reveal')
@@ -228,6 +260,7 @@ export default function App() {
             <a href="#quickstart">Quickstart</a>
           </nav>
           <div className="nav-cta">
+            <ThemeToggle theme={theme} onToggle={() => setTheme(theme === 'dark' ? 'light' : 'dark')} />
             <a className="btn btn-ghost" href={DOCS_URL} target="_blank" rel="noreferrer">Read the docs</a>
             <a className="btn btn-primary" href={GH_URL} target="_blank" rel="noreferrer">
               <GitHubIcon />
