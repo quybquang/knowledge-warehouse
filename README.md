@@ -2,7 +2,7 @@
 
 Centralized project knowledge — the single place holding **approved** business rules, terminology, decisions, and API contracts. Goal: humans and AI agents make decisions from the same source of truth instead of scattered docs.
 
-Full architecture: [docs/HARNESS.md](docs/HARNESS.md).
+**Landing page:** https://quybquang.github.io/knowledge-warehouse/ · Full architecture: [docs/HARNESS.md](docs/HARNESS.md).
 
 ## Core principles
 
